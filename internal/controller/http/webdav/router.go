@@ -22,10 +22,22 @@ func NewRouter(
 	h := handler.Group("/webdav")
 	h.Use(basicAuth(a))
 	h.Handle("PROPFIND", "/", func(c *gin.Context) {
-		// Static response for PROPFIND
+		// Static response for PROPFIND: describes "/webdav/" itself as a
+		// collection, so clients that require a self entry (e.g. KOReader's
+		// folder picker) have something to select, even though it has no
+		// children to list.
 		response := `<?xml version="1.0" encoding="UTF-8"?>
 		<D:multistatus
 			xmlns:D="DAV:">
+			<D:response>
+				<D:href>/webdav/</D:href>
+				<D:propstat>
+					<D:prop>
+						<D:resourcetype><D:collection/></D:resourcetype>
+					</D:prop>
+					<D:status>HTTP/1.1 200 OK</D:status>
+				</D:propstat>
+			</D:response>
 		</D:multistatus>`
 		c.Header("Content-Type", "application/xml")
 		c.String(http.StatusMultiStatus, response)
