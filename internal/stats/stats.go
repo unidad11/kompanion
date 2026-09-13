@@ -139,6 +139,59 @@ type DailyStats struct {
 	AvgDurationPerPage float64
 }
 
+func (s *KOReaderPGStats) GetBooksList(ctx context.Context) ([]BookListItem, error) {
+	query := `
+		SELECT
+			b.title,
+			MAX(b.pages) as total_pages,
+			COUNT(DISTINCT kpsd.page) as total_read_pages,
+			SUM(kpsd.duration) as total_read_time,
+			MIN(kpsd.start_time) as first_read,
+			MAX(kpsd.start_time) as last_read
+		FROM stats_page_stat_data kpsd
+		JOIN stats_book b ON b.koreader_partial_md5 = kpsd.koreader_partial_md5 AND b.auth_device_name = kpsd.auth_device_name
+		GROUP BY b.title, b.koreader_partial_md5
+		ORDER BY last_read DESC
+	`
+
+	rows, err := s.pg.Pool.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get books list: %w", err)
+	}
+	defer rows.Close()
+
+	var books []BookListItem
+	for rows.Next() {
+		var book BookListItem
+		var totalPages *int
+		err := rows.Scan(
+			&book.Title,
+			&totalPages,
+			&book.TotalReadPages,
+			&book.TotalReadTime,
+			&book.FirstRead,
+			&book.LastRead,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan book list item: %w", err)
+		}
+
+		if totalPages != nil {
+			book.TotalPages = *totalPages
+			if book.TotalPages > 0 {
+				book.ProgressPercent = int(float64(book.TotalReadPages) / float64(book.TotalPages) * 100)
+				if book.ProgressPercent > 100 {
+					book.ProgressPercent = 100
+				}
+			}
+		}
+
+		books = append(books, book)
+	}
+
+	return books, nil
+}
+
 func (s *KOReaderPGStats) GetDailyStats(ctx context.Context, from, to time.Time) ([]DailyStats, error) {
 	query := `
 		WITH RECURSIVE dates AS (

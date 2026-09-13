@@ -1,0 +1,40 @@
+{{ define "title" }}Reading History - KOmpanion{{ end }}
+
+{{ define "content" }}
+<article>
+    <header>
+        <h1>Reading History</h1>
+        <p><a href="/stats/">&larr; Back to Statistics</a></p>
+    </header>
+
+    <section>
+        <table>
+            <thead>
+                <tr>
+                    <th>Book Title</th>
+                    <th>Pages</th>
+                    <th>Progress</th>
+                    <th>Time Spent</th>
+                    <th>First Read</th>
+                    <th>Last Read</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{ range .books }}
+                <tr>
+                    <td>{{ .Title }}</td>
+                    <td>{{ if gt .TotalPages 0 }}{{ .TotalReadPages }} / {{ .TotalPages }}{{ else }}{{ .TotalReadPages }}{{ end }}</td>
+                    <td>{{ if gt .TotalPages 0 }}{{ generateProgressBar .ProgressPercent 15 }} // {{ .ProgressPercent }}%{{ else }}&mdash;{{ end }}</td>
+                    <td>{{ formatDuration .TotalReadTime }}</td>
+                    <td>{{ .FirstRead.Format "2006-01-02" }}</td>
+                    <td>{{ .LastRead.Format "2006-01-02" }}</td>
+                </tr>
+                {{ end }}
+            </tbody>
+        </table>
+        {{ if not .books }}
+        <p>No reading history yet.</p>
+        {{ end }}
+    </section>
+</article>
+{{ end }}

@@ -196,4 +196,19 @@ func newStatsRoutes(handler *gin.RouterGroup, stats stats.ReadingStats, l logger
 		c.Header("Content-Type", "image/png")
 		c.Data(200, "image/png", chartBytes)
 	})
+
+	handler.GET("/books", func(c *gin.Context) {
+		books, err := stats.GetBooksList(c.Request.Context())
+		if err != nil {
+			l.Error(err, "failed to get books list")
+			c.HTML(500, "error", passStandartContext(c, gin.H{
+				"error": err,
+			}))
+			return
+		}
+
+		c.HTML(200, "stats_books", passStandartContext(c, gin.H{
+			"books": books,
+		}))
+	})
 }

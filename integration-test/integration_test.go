@@ -388,6 +388,15 @@ func TestWebStats(t *testing.T) {
 		Expect().Body().String().Contains("Crime and Punishment"),
 	)
 
+	Test(t,
+		HTTPClient(client),
+		Description("Kompanion Get Books Reading History"),
+		Get(basePath+"/stats/books"),
+		Send().Headers("Authorization").Add(basicAuth),
+		Expect().Status().Equal(http.StatusOK),
+		Expect().Body().String().Contains("Crime and Punishment"),
+	)
+
 	// regress for uploading same file
 	// https://github.com/vanadium23/kompanion/issues/22
 	Test(t,

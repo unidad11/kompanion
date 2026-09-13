@@ -22,9 +22,20 @@ type BookStatsWithTitle struct {
 	BookStats
 }
 
+type BookListItem struct {
+	Title           string
+	TotalPages      int
+	TotalReadPages  int
+	ProgressPercent int
+	TotalReadTime   int // in seconds
+	FirstRead       time.Time
+	LastRead        time.Time
+}
+
 type ReadingStats interface {
 	GetBookStats(ctx context.Context, fileHash string) (*BookStats, error)
 	GetGeneralStats(ctx context.Context, from, to time.Time) (*GeneralStats, error)
 	GetDailyStats(ctx context.Context, from, to time.Time) ([]DailyStats, error)
+	GetBooksList(ctx context.Context) ([]BookListItem, error)
 	Write(ctx context.Context, r io.ReadCloser, deviceName string) error
 }
