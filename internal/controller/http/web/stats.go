@@ -211,4 +211,19 @@ func newStatsRoutes(handler *gin.RouterGroup, stats stats.ReadingStats, l logger
 			"books": books,
 		}))
 	})
+
+	handler.GET("/reading", func(c *gin.Context) {
+		items, err := stats.GetCurrentlyReading(c.Request.Context())
+		if err != nil {
+			l.Error(err, "failed to get currently reading")
+			c.HTML(500, "error", passStandartContext(c, gin.H{
+				"error": err,
+			}))
+			return
+		}
+
+		c.HTML(200, "stats_reading", passStandartContext(c, gin.H{
+			"items": items,
+		}))
+	})
 }

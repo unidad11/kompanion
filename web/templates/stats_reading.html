@@ -1,0 +1,36 @@
+{{ define "title" }}Currently Reading - KOmpanion{{ end }}
+
+{{ define "content" }}
+<article>
+    <header>
+        <h1>Currently Reading</h1>
+        <p><a href="/stats/">&larr; Back to Statistics</a></p>
+    </header>
+
+    <section>
+        <table>
+            <thead>
+                <tr>
+                    <th>Book Title</th>
+                    <th>Progress</th>
+                    <th>Pages</th>
+                    <th>Last Read</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{ range .items }}
+                <tr>
+                    <td>{{ .Title }}</td>
+                    <td>{{ generateProgressBar .Percentage 15 }} // {{ .Percentage }}%</td>
+                    <td>{{ if gt .TotalPages 0 }}{{ .TotalPages }}{{ else }}&mdash;{{ end }}</td>
+                    <td>{{ .LastRead.Format "2006-01-02 15:04" }}</td>
+                </tr>
+                {{ end }}
+            </tbody>
+        </table>
+        {{ if not .items }}
+        <p>No reading progress synced yet.</p>
+        {{ end }}
+    </section>
+</article>
+{{ end }}

@@ -192,6 +192,62 @@ func (s *KOReaderPGStats) GetBooksList(ctx context.Context) ([]BookListItem, err
 	return books, nil
 }
 
+func (s *KOReaderPGStats) GetCurrentlyReading(ctx context.Context) ([]CurrentlyReadingItem, error) {
+	// sync_progress is an append-only log (one row per sync event), so pick
+	// the latest row per book first, then order those by recency.
+	query := `
+		SELECT * FROM (
+			SELECT DISTINCT ON (sp.koreader_partial_md5)
+				sp.koreader_partial_md5,
+				sb.title,
+				sb.pages,
+				sp.percentage,
+				sp.created_at
+			FROM sync_progress sp
+			LEFT JOIN stats_book sb ON sb.koreader_partial_md5 = sp.koreader_partial_md5
+			ORDER BY sp.koreader_partial_md5, sp.created_at DESC
+		) latest
+		ORDER BY created_at DESC
+	`
+
+	rows, err := s.pg.Pool.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get currently reading: %w", err)
+	}
+	defer rows.Close()
+
+	var items []CurrentlyReadingItem
+	for rows.Next() {
+		var hash string
+		var title *string
+		var pages *int
+		var percentage float64
+		var lastRead time.Time
+
+		err := rows.Scan(&hash, &title, &pages, &percentage, &lastRead)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan currently reading item: %w", err)
+		}
+
+		item := CurrentlyReadingItem{
+			Percentage: int(percentage * 100),
+			LastRead:   lastRead,
+		}
+		if title != nil {
+			item.Title = *title
+		} else {
+			item.Title = hash
+		}
+		if pages != nil {
+			item.TotalPages = *pages
+		}
+
+		items = append(items, item)
+	}
+
+	return items, nil
+}
+
 func (s *KOReaderPGStats) GetDailyStats(ctx context.Context, from, to time.Time) ([]DailyStats, error) {
 	query := `
 		WITH RECURSIVE dates AS (
